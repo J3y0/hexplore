@@ -25,7 +25,7 @@ fn main() -> anyhow::Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout))?;
 
     run_app(&mut terminal, &mut app).unwrap_or_else(|err| {
-        let _ = writeln!(io::stderr(), "error occured: {err:?}");
+        let _ = writeln!(io::stderr(), "error occurred: {err:?}");
     });
 
     disable_raw_mode()?;

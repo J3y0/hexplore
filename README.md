@@ -1,6 +1,6 @@
 # Hexplore
 
-An hexdecimal editor tailored for reverse-engineering tasks written in Rust.
+An hexadecimal editor tailored for reverse-engineering tasks written in Rust.
 
 # TODO
 
