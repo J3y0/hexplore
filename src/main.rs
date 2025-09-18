@@ -1,8 +1,16 @@
+mod app;
 mod display;
 
+use app::App;
 use clap::Parser;
+use ratatui::Terminal;
+use ratatui::backend::{Backend, CrosstermBackend};
+use ratatui::crossterm::event::{self, DisableMouseCapture, EnableMouseCapture};
+use ratatui::crossterm::execute;
+use ratatui::crossterm::terminal::{
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+};
 use std::fmt::Debug;
-use std::fs;
 use std::io::{self, Write};
 
 #[derive(Parser, Debug)]
@@ -14,45 +22,40 @@ struct Args {
     align: usize,
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    match hexdump(&args.file, args.align) {
-        Ok(()) => (),
-        Err(e) => {
-            // Gracefully terminate the program if BrokenPipe
-            if e.kind() == std::io::ErrorKind::BrokenPipe {
-                return;
-            }
-            let _ = writeln!(io::stderr(), "hexdump: error {e}");
-        }
-    }
-}
+    // ratatui init
+    let mut stdout = io::stdout();
+    enable_raw_mode()?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
-fn hexdump(file: &str, align: usize) -> io::Result<()> {
-    let content = fs::read(file)?;
-    let len = content.len();
-    let nb_hexdigits = count_hexdigits(len);
+    let mut app = App::new(args.file, args.align)?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout))?;
 
-    for (i, chunk) in content.chunks(align).enumerate() {
-        let pad = (align - chunk.len()) % align;
-        writeln!(
-            io::stdout(),
-            "{} | {} | {} |",
-            display::format_index(align * i, nb_hexdigits),
-            display::format_hex(chunk, pad),
-            display::format_ascii(chunk, pad)
-        )?;
-    }
+    run_app(&mut terminal, &mut app).unwrap_or_else(|err| {
+        let _ = writeln!(io::stderr(), "error occured: {err:?}");
+    });
 
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
     Ok(())
 }
 
-fn count_hexdigits(val: usize) -> usize {
-    let mut i = 0;
-    while val >> (4 * i) != 0 {
-        i += 1;
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> anyhow::Result<()> {
+    loop {
+        if app.quit {
+            break;
+        }
+        terminal.draw(|f| app.draw(f))?;
+
+        let event = event::read()?;
+        app.handle_event(event)?;
     }
 
-    i
+    Ok(())
 }

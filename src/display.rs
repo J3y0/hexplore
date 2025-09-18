@@ -1,20 +1,70 @@
-pub fn format_hex(bytes: &[u8], padding: usize) -> String {
+use ratatui::text::Line;
+
+use crate::app::App;
+
+impl App {
+    pub fn get_address_to_lines(
+        &self,
+        start_line_idx: usize,
+        end_line_idx: usize,
+    ) -> Vec<Line<'static>> {
+        let cap = count_hexdigits(self.size);
+        let mut text = vec![];
+
+        for idx in start_line_idx..end_line_idx {
+            let addr = idx * self.alignment;
+            let hex = format!("{addr:x}");
+            text.push(Line::from("0".repeat(cap - hex.len()) + &hex));
+        }
+
+        text
+    }
+
+    pub fn get_hexdump(&self, start_line_idx: usize, end_line_idx: usize) -> Vec<Line<'static>> {
+        let mut text = vec![];
+        let chunks_iter = self
+            .data
+            .chunks(self.alignment)
+            .skip(start_line_idx)
+            .take(end_line_idx);
+
+        for chunk in chunks_iter {
+            let pad = (self.alignment - chunk.len()) % self.alignment;
+            text.push(Line::from(line_format_hex(chunk, pad)));
+        }
+        text
+    }
+
+    pub fn get_asciidump(&self, start_line_idx: usize, end_line_idx: usize) -> Vec<Line<'static>> {
+        let mut text = vec![];
+        let chunks_iter = self
+            .data
+            .chunks(self.alignment)
+            .skip(start_line_idx)
+            .take(end_line_idx);
+
+        for chunk in chunks_iter {
+            let pad = (self.alignment - chunk.len()) % self.alignment;
+            text.push(Line::from(line_format_ascii(chunk, pad)));
+        }
+        text
+    }
+}
+
+fn line_format_hex(bytes: &[u8], padding: usize) -> String {
     let mut s = String::with_capacity(3 * bytes.len());
 
     for b in bytes.iter() {
         s.push_str(format!("{b:02X} ").as_str());
     }
+    s.push_str("   ".repeat(padding).as_str());
     // Pop last space
     s.pop();
-
-    for _ in 0..padding {
-        s.push_str("   ");
-    }
 
     s
 }
 
-pub fn format_ascii(bytes: &[u8], padding: usize) -> String {
+fn line_format_ascii(bytes: &[u8], padding: usize) -> String {
     let mut s = String::with_capacity(bytes.len());
 
     for b in bytes.iter() {
@@ -24,21 +74,16 @@ pub fn format_ascii(bytes: &[u8], padding: usize) -> String {
             s.push('.');
         }
     }
-
-    for _ in 0..padding {
-        s.push(' ');
-    }
+    s.push_str(" ".repeat(padding).as_str());
 
     s
 }
 
-pub fn format_index(i: usize, cap: usize) -> String {
-    let mut s = String::with_capacity(cap);
-    let hex = format!("{i:x}");
-    for _ in hex.len()..cap {
-        s.push('0');
+fn count_hexdigits(val: usize) -> usize {
+    let mut i = 0;
+    while val >> (4 * i) != 0 {
+        i += 1;
     }
-    s.push_str(&hex);
 
-    s
+    i
 }
