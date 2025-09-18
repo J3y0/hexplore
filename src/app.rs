@@ -1,6 +1,6 @@
 use ratatui::{
     Frame,
-    crossterm::event::{Event, KeyCode},
+    crossterm::event::{Event, KeyCode, MouseEvent, MouseEventKind},
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders, Paragraph},
 };
@@ -95,6 +95,20 @@ impl App {
                     }
                 }
                 KeyCode::Char('k') => {
+                    self.line_idx = self.line_idx.saturating_sub(1);
+                }
+                _ => {}
+            }
+        }
+
+        if let Event::Mouse(mouse) = event {
+            match mouse.kind {
+                MouseEventKind::ScrollDown => {
+                    if self.line_idx + 1 <= self.size / self.alignment {
+                        self.line_idx += 1;
+                    }
+                }
+                MouseEventKind::ScrollUp => {
                     self.line_idx = self.line_idx.saturating_sub(1);
                 }
                 _ => {}
