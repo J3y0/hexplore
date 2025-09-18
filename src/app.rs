@@ -1,6 +1,6 @@
 use ratatui::{
     Frame,
-    crossterm::event::{Event, KeyCode, MouseEventKind},
+    crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind},
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders, Paragraph},
 };
@@ -11,7 +11,9 @@ const HEX_PANE_WIDTH_PERCENTAGE: u16 = 50;
 const ASCII_PANE_WIDTH_PERCENTAGE: u16 = 35;
 
 pub struct App {
-    line_idx: usize,
+    pub line_idx: usize,
+    pub vertical_margin: usize,
+    pub frame_size: (u16, u16),
     // content of the opened file
     pub data: Vec<u8>,
     pub size: usize,
@@ -38,7 +40,8 @@ impl App {
         })
     }
 
-    pub fn draw(&self, frame: &mut Frame) {
+    pub fn draw(&mut self, frame: &mut Frame) {
+        let area = frame.area();
         // layout
         let screen = Layout::default()
             .direction(Direction::Horizontal)
@@ -47,11 +50,13 @@ impl App {
                 Constraint::Percentage(HEX_PANE_WIDTH_PERCENTAGE),
                 Constraint::Percentage(ASCII_PANE_WIDTH_PERCENTAGE),
             ])
-            .split(frame.area());
+            .split(area);
 
-        let f_height: usize = frame.area().height as usize;
+        self.update_frame_size(area.height, area.width);
+
         let start_line_idx = self.line_idx;
-        let mut end_line_idx = self.line_idx + f_height;
+        // sub 2 because compared to frame size, only height-2 lines are rendered
+        let mut end_line_idx = self.line_idx + area.height as usize - self.vertical_margin;
         if end_line_idx * self.alignment > self.size {
             end_line_idx = self.size / self.alignment + 1;
         }
@@ -87,23 +92,50 @@ impl App {
     }
 
     pub fn handle_event(&mut self, event: Event) -> anyhow::Result<()> {
-        if let Event::Key(key) = event {
-            match key.code {
-                KeyCode::Char('q') => self.quit = true,
-                KeyCode::Char('j') => {
-                    if self.line_idx < self.size / self.alignment {
-                        self.line_idx += 1;
+        match event {
+            Event::Key(key) if key.kind == KeyEventKind::Press => {
+                match (key.code, key.modifiers) {
+                    // Exit
+                    (KeyCode::Char('q'), KeyModifiers::NONE) => self.quit = true,
+                    // Navigation (vim style)
+                    //   Down
+                    (KeyCode::Char('j'), KeyModifiers::NONE) => {
+                        if self.line_idx < self.size / self.alignment {
+                            self.line_idx += 1;
+                        }
                     }
+                    //   Up
+                    (KeyCode::Char('k'), KeyModifiers::NONE) => {
+                        self.line_idx = self.line_idx.saturating_sub(1);
+                    }
+                    //   Mid page up
+                    (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
+                        self.move_page_half_up();
+                    }
+                    //   Mid page down
+                    (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
+                        self.move_page_half_down();
+                    }
+                    //   Mid page up
+                    (KeyCode::PageUp, KeyModifiers::NONE) => {
+                        self.move_page_up();
+                    }
+                    //   Mid page down
+                    (KeyCode::PageDown, KeyModifiers::NONE) => {
+                        self.move_page_down();
+                    }
+                    //   go to start
+                    (KeyCode::Char('g'), KeyModifiers::NONE) => {
+                        self.line_idx = 0;
+                    }
+                    //   SHIFT + G -- go to end
+                    (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
+                        self.line_idx = self.size / self.alignment;
+                    }
+                    _ => {}
                 }
-                KeyCode::Char('k') => {
-                    self.line_idx = self.line_idx.saturating_sub(1);
-                }
-                _ => {}
             }
-        }
-
-        if let Event::Mouse(mouse) = event {
-            match mouse.kind {
+            Event::Mouse(mouse) => match mouse.kind {
                 MouseEventKind::ScrollDown => {
                     if self.line_idx < self.size / self.alignment {
                         self.line_idx += 1;
@@ -113,7 +145,8 @@ impl App {
                     self.line_idx = self.line_idx.saturating_sub(1);
                 }
                 _ => {}
-            }
+            },
+            _ => {}
         }
 
         Ok(())
@@ -124,6 +157,8 @@ impl Default for App {
     fn default() -> Self {
         App {
             line_idx: 0,
+            vertical_margin: 2,
+            frame_size: (0, 0),
             data: vec![],
             size: 0,
             quit: false,

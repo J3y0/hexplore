@@ -1,6 +1,7 @@
 mod app;
 mod cli;
 mod display;
+mod movement;
 
 use app::App;
 use clap::Parser;
