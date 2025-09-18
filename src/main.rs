@@ -1,4 +1,5 @@
 mod app;
+mod cli;
 mod display;
 
 use app::App;
@@ -10,20 +11,10 @@ use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
-use std::fmt::Debug;
 use std::io::{self, Write};
 
-#[derive(Parser, Debug)]
-#[command(name = "hexplore")]
-#[command(version, about = "Dump files with hex/ascii view.")]
-struct Args {
-    file: String,
-    #[arg(short, long, default_value_t = 16)]
-    align: usize,
-}
-
 fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
+    let args = cli::Args::parse();
 
     // ratatui init
     let mut stdout = io::stdout();

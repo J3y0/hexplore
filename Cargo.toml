@@ -1,6 +1,13 @@
 [package]
 name = "hexplore"
 version = "0.1.0"
+description = """
+Hexplore is a TUI-rendered hexdump. It gives a hexadecimal and ascii view
+of the opened file.
+"""
+keywords = ["hexdump", "TUI"]
+readme = "README.md"
+repository = "https://github.com/J3y0/hexplore"
 edition = "2024"
 
 [dependencies]
