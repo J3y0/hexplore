@@ -1,6 +1,6 @@
 use ratatui::{
     Frame,
-    crossterm::event::{Event, KeyCode, MouseEvent, MouseEventKind},
+    crossterm::event::{Event, KeyCode, MouseEventKind},
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders, Paragraph},
 };
@@ -20,6 +20,7 @@ pub struct App {
 
     // inherited from flags
     pub alignment: usize,
+    #[allow(dead_code)]
     filename: String,
 }
 
@@ -90,7 +91,7 @@ impl App {
             match key.code {
                 KeyCode::Char('q') => self.quit = true,
                 KeyCode::Char('j') => {
-                    if self.line_idx + 1 <= self.size / self.alignment {
+                    if self.line_idx < self.size / self.alignment {
                         self.line_idx += 1;
                     }
                 }
@@ -104,7 +105,7 @@ impl App {
         if let Event::Mouse(mouse) = event {
             match mouse.kind {
                 MouseEventKind::ScrollDown => {
-                    if self.line_idx + 1 <= self.size / self.alignment {
+                    if self.line_idx < self.size / self.alignment {
                         self.line_idx += 1;
                     }
                 }
