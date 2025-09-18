@@ -26,7 +26,7 @@ impl App {
             .data
             .chunks(self.alignment)
             .skip(start_line_idx)
-            .take(end_line_idx);
+            .take(end_line_idx - start_line_idx);
 
         for chunk in chunks_iter {
             let pad = (self.alignment - chunk.len()) % self.alignment;
@@ -41,7 +41,7 @@ impl App {
             .data
             .chunks(self.alignment)
             .skip(start_line_idx)
-            .take(end_line_idx);
+            .take(end_line_idx - start_line_idx);
 
         for chunk in chunks_iter {
             let pad = (self.alignment - chunk.len()) % self.alignment;
