@@ -8,7 +8,7 @@ impl App {
         start_line_idx: usize,
         end_line_idx: usize,
     ) -> Vec<Line<'static>> {
-        let cap = count_hexdigits(self.size);
+        let cap = count_hexdigits(self.fileinfo.size);
         let mut text = vec![];
 
         for idx in start_line_idx..end_line_idx {
@@ -23,7 +23,8 @@ impl App {
     pub fn get_hexdump(&self, start_line_idx: usize, end_line_idx: usize) -> Vec<Line<'static>> {
         let mut text = vec![];
         let chunks_iter = self
-            .data
+            .fileinfo
+            .content
             .chunks(self.alignment)
             .skip(start_line_idx)
             .take(end_line_idx - start_line_idx);
@@ -38,7 +39,8 @@ impl App {
     pub fn get_asciidump(&self, start_line_idx: usize, end_line_idx: usize) -> Vec<Line<'static>> {
         let mut text = vec![];
         let chunks_iter = self
-            .data
+            .fileinfo
+            .content
             .chunks(self.alignment)
             .skip(start_line_idx)
             .take(end_line_idx - start_line_idx);

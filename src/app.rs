@@ -5,9 +5,11 @@ use ratatui::{
     text::Text,
     widgets::{Block, Borders, Paragraph},
 };
-use std::fs;
 
-use crate::popup::{Popup, centered_rect};
+use crate::{
+    file::FileInfo,
+    popup::{Popup, centered_rect},
+};
 
 const ADDR_PANE_WIDTH_PERCENTAGE: u16 = 15;
 const HEX_PANE_WIDTH_PERCENTAGE: u16 = 50;
@@ -24,35 +26,30 @@ ctrl+u:   Move half page up
 ctrl+d:   Move half page down
 g:        Go to start
 G:        Go to end
+i:        Get file details
 "#;
 
 pub struct App {
     pub line_idx: usize,
     pub vertical_margin: usize,
     pub frame_size: (u16, u16),
-    pub show_help: bool,
-    // content of the opened file
-    pub data: Vec<u8>,
-    pub size: usize,
+    show_help: bool,
+    show_fileinfo: bool,
+    pub fileinfo: FileInfo,
     // exit state
     pub quit: bool,
 
     // inherited from flags
     pub alignment: usize,
-    #[allow(dead_code)]
-    filename: String,
 }
 
 impl App {
     pub fn new(filename: String, alignment: usize) -> anyhow::Result<App> {
-        let content = fs::read(&filename)?;
-        let size = content.len();
+        let fileinfo = FileInfo::new(&filename)?;
 
         Ok(App {
-            data: content,
-            size,
+            fileinfo,
             alignment,
-            filename,
             ..App::default()
         })
     }
@@ -71,11 +68,12 @@ impl App {
 
         self.update_frame_size(area.height, area.width);
 
+        let filesize = self.fileinfo.size;
         let start_line_idx = self.line_idx;
         // sub 2 because compared to frame size, only height-2 lines are rendered
         let mut end_line_idx = self.line_idx + area.height as usize - self.vertical_margin;
-        if end_line_idx * self.alignment > self.size {
-            end_line_idx = self.size / self.alignment + 1;
+        if end_line_idx * self.alignment > filesize {
+            end_line_idx = filesize / self.alignment + 1;
         }
 
         // --- Address view
@@ -108,13 +106,19 @@ impl App {
         frame.render_widget(ascii_view, body[2]);
 
         // --- Footer
-        let footer_chunks = Layout::horizontal([Constraint::Length(25), Constraint::Length(35)])
-            .horizontal_margin(4)
-            .flex(Flex::SpaceBetween)
-            .split(screen[1]);
+        let file_details_text = format!("Press (i) for '{}' details", self.fileinfo.name);
+        let footer_chunks = Layout::horizontal([
+            Constraint::Length(25),
+            Constraint::Length(file_details_text.len() as u16),
+        ])
+        .horizontal_margin(4)
+        .flex(Flex::SpaceBetween)
+        .split(screen[1]);
 
         let left_footer = Text::from("Press (h) for help");
+        let right_footer = Text::from(file_details_text);
         frame.render_widget(left_footer, footer_chunks[0]);
+        frame.render_widget(right_footer, footer_chunks[1]);
 
         // --- Help popup
         if self.show_help {
@@ -122,9 +126,19 @@ impl App {
             let popup = Popup::default().title("Help").content(HELP_BODY);
             frame.render_widget(popup, popup_rect);
         }
+
+        // --- Fileinfo popup
+        if self.show_fileinfo {
+            let popup_rect = centered_rect(area, 50, 25);
+            let popup = Popup::default()
+                .title("File details")
+                .content(self.fileinfo.to_text());
+            frame.render_widget(popup, popup_rect);
+        }
     }
 
     pub fn handle_event(&mut self, event: Event) -> anyhow::Result<()> {
+        let filesize = self.fileinfo.size;
         match event {
             Event::Key(key) if key.kind == KeyEventKind::Press => {
                 match (key.code, key.modifiers) {
@@ -133,7 +147,7 @@ impl App {
                     // Navigation (vim style)
                     //   Down
                     (KeyCode::Char('j'), KeyModifiers::NONE) => {
-                        if self.line_idx < self.size / self.alignment {
+                        if self.line_idx < filesize / self.alignment {
                             self.line_idx += 1;
                         }
                     }
@@ -163,16 +177,20 @@ impl App {
                     }
                     //   SHIFT + G -- go to end
                     (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
-                        self.line_idx = self.size / self.alignment;
+                        self.line_idx = filesize / self.alignment;
                     }
                     // Toggle help dialog
                     (KeyCode::Char('h'), KeyModifiers::NONE) => self.show_help = !self.show_help,
+                    // Toggle file details dialog
+                    (KeyCode::Char('i'), KeyModifiers::NONE) => {
+                        self.show_fileinfo = !self.show_fileinfo
+                    }
                     _ => {}
                 }
             }
             Event::Mouse(mouse) => match mouse.kind {
                 MouseEventKind::ScrollDown => {
-                    if self.line_idx < self.size / self.alignment {
+                    if self.line_idx < filesize / self.alignment {
                         self.line_idx += 1;
                     }
                 }
@@ -195,11 +213,10 @@ impl Default for App {
             vertical_margin: 3,
             frame_size: (0, 0),
             show_help: false,
-            data: vec![],
-            size: 0,
+            show_fileinfo: false,
+            fileinfo: FileInfo::default(),
             quit: false,
             alignment: 16,
-            filename: String::new(),
         }
     }
 }
