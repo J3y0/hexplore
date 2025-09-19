@@ -1,19 +1,36 @@
 use ratatui::{
     Frame,
     crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind},
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Flex, Layout},
+    text::Text,
     widgets::{Block, Borders, Paragraph},
 };
 use std::fs;
+
+use crate::popup::{Popup, centered_rect};
 
 const ADDR_PANE_WIDTH_PERCENTAGE: u16 = 15;
 const HEX_PANE_WIDTH_PERCENTAGE: u16 = 50;
 const ASCII_PANE_WIDTH_PERCENTAGE: u16 = 35;
 
+const HELP_BODY: &str = r#"
+h:        Toggle this help dialog
+q:        Quit the application
+j:        Move one line down
+h:        Move one line up
+PageUp:   Move one page up
+PageDown: Move one page down
+ctrl+u:   Move half page up
+ctrl+d:   Move half page down
+g:        Go to start
+G:        Go to end
+"#;
+
 pub struct App {
     pub line_idx: usize,
     pub vertical_margin: usize,
     pub frame_size: (u16, u16),
+    pub show_help: bool,
     // content of the opened file
     pub data: Vec<u8>,
     pub size: usize,
@@ -43,14 +60,14 @@ impl App {
     pub fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
         // layout
-        let screen = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(ADDR_PANE_WIDTH_PERCENTAGE),
-                Constraint::Percentage(HEX_PANE_WIDTH_PERCENTAGE),
-                Constraint::Percentage(ASCII_PANE_WIDTH_PERCENTAGE),
-            ])
-            .split(area);
+        let screen = Layout::vertical([Constraint::Fill(0), Constraint::Length(1)]).split(area);
+
+        let body = Layout::horizontal([
+            Constraint::Percentage(ADDR_PANE_WIDTH_PERCENTAGE),
+            Constraint::Percentage(HEX_PANE_WIDTH_PERCENTAGE),
+            Constraint::Percentage(ASCII_PANE_WIDTH_PERCENTAGE),
+        ])
+        .split(screen[0]);
 
         self.update_frame_size(area.height, area.width);
 
@@ -71,7 +88,7 @@ impl App {
             .block(address_block)
             .alignment(ratatui::layout::Alignment::Right);
 
-        frame.render_widget(address_view, screen[0]);
+        frame.render_widget(address_view, body[0]);
 
         // --- Hex view
         let hex_block = Block::default().title("Hex").borders(Borders::ALL);
@@ -79,7 +96,7 @@ impl App {
         let hexdump = self.get_hexdump(start_line_idx, end_line_idx);
         let hex_view = Paragraph::new(hexdump).block(hex_block);
 
-        frame.render_widget(hex_view, screen[1]);
+        frame.render_widget(hex_view, body[1]);
 
         // --- Ascii view
         let ascii_block = Block::default()
@@ -88,7 +105,23 @@ impl App {
 
         let asciidump = self.get_asciidump(start_line_idx, end_line_idx);
         let ascii_view = Paragraph::new(asciidump).block(ascii_block);
-        frame.render_widget(ascii_view, screen[2]);
+        frame.render_widget(ascii_view, body[2]);
+
+        // --- Footer
+        let footer_chunks = Layout::horizontal([Constraint::Length(25), Constraint::Length(35)])
+            .horizontal_margin(4)
+            .flex(Flex::SpaceBetween)
+            .split(screen[1]);
+
+        let left_footer = Text::from("Press (h) for help");
+        frame.render_widget(left_footer, footer_chunks[0]);
+
+        // --- Help popup
+        if self.show_help {
+            let popup_rect = centered_rect(area, 30, 40);
+            let popup = Popup::default().title("Help").content(HELP_BODY);
+            frame.render_widget(popup, popup_rect);
+        }
     }
 
     pub fn handle_event(&mut self, event: Event) -> anyhow::Result<()> {
@@ -132,6 +165,8 @@ impl App {
                     (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
                         self.line_idx = self.size / self.alignment;
                     }
+                    // Toggle help dialog
+                    (KeyCode::Char('h'), KeyModifiers::NONE) => self.show_help = !self.show_help,
                     _ => {}
                 }
             }
@@ -157,8 +192,9 @@ impl Default for App {
     fn default() -> Self {
         App {
             line_idx: 0,
-            vertical_margin: 2,
+            vertical_margin: 3,
             frame_size: (0, 0),
+            show_help: false,
             data: vec![],
             size: 0,
             quit: false,
