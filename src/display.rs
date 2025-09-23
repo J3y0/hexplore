@@ -54,7 +54,10 @@ impl App {
 fn line_format_hex(bytes: &[u8]) -> String {
     let mut s = String::with_capacity(3 * bytes.len());
 
-    for b in bytes.iter() {
+    for (i, b) in bytes.iter().enumerate() {
+        if i != 0 && i % 4 == 0 {
+            s.push(' ');
+        }
         s.push_str(format!("{b:02X} ").as_str());
     }
     // Pop last space
