@@ -66,8 +66,6 @@ impl App {
         ])
         .split(screen[0]);
 
-        self.update_frame_size(area.height, area.width);
-
         let filesize = self.fileinfo.size;
         let start_line_idx = self.line_idx;
         // sub 2 because compared to frame size, only height-2 lines are rendered
@@ -155,19 +153,19 @@ impl App {
                     (KeyCode::Char('k'), KeyModifiers::NONE) => {
                         self.line_idx = self.line_idx.saturating_sub(1);
                     }
-                    //   Mid page up
+                    //   Mid-page up
                     (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
                         self.move_page_half_up();
                     }
-                    //   Mid page down
+                    //   Mid-page down
                     (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
                         self.move_page_half_down();
                     }
-                    //   Mid page up
+                    //   Mid-page up
                     (KeyCode::PageUp, KeyModifiers::NONE) => {
                         self.move_page_up();
                     }
-                    //   Mid page down
+                    //   Mid-page down
                     (KeyCode::PageDown, KeyModifiers::NONE) => {
                         self.move_page_down();
                     }
@@ -199,6 +197,7 @@ impl App {
                 }
                 _ => {}
             },
+            Event::Resize(width, height) => self.update_frame_size(width, height),
             _ => {}
         }
 

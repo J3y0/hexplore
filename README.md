@@ -8,7 +8,7 @@ An hexadecimal editor tailored for reverse-engineering tasks written in Rust.
 - [x] Add basic Ratatui display (TUI rendered)
 - [x] Add help popup with all keybinds
 - [ ] Add scrollbar support
-- [ ] Add resize event handling
+- [x] Add resize event handling
 - [ ] Add different event handling when popup is visible
 - [x] Add file information (sha, `file` output, size, filename) popup
 - [ ] Performance: lazy load file content (read when displayed and not try to read/store whole file content)
