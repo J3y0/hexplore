@@ -1,6 +1,7 @@
 mod app;
 mod cli;
 mod display;
+mod events;
 mod file;
 mod movement;
 mod popup;

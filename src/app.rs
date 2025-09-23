@@ -1,6 +1,5 @@
 use ratatui::{
     Frame,
-    crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind},
     layout::{Constraint, Flex, Layout},
     text::Text,
     widgets::{Block, Borders, Paragraph},
@@ -33,8 +32,8 @@ pub struct App {
     pub line_idx: usize,
     pub vertical_margin: usize,
     pub frame_size: (u16, u16),
-    show_help: bool,
-    show_fileinfo: bool,
+    pub show_help: bool,
+    pub show_fileinfo: bool,
     pub fileinfo: FileInfo,
     // exit state
     pub quit: bool,
@@ -133,75 +132,6 @@ impl App {
                 .content(self.fileinfo.to_text());
             frame.render_widget(popup, popup_rect);
         }
-    }
-
-    pub fn handle_event(&mut self, event: Event) -> anyhow::Result<()> {
-        let filesize = self.fileinfo.size;
-        match event {
-            Event::Key(key) if key.kind == KeyEventKind::Press => {
-                match (key.code, key.modifiers) {
-                    // Exit
-                    (KeyCode::Char('q'), KeyModifiers::NONE) => self.quit = true,
-                    // Navigation (vim style)
-                    //   Down
-                    (KeyCode::Char('j'), KeyModifiers::NONE) => {
-                        if self.line_idx < filesize / self.alignment {
-                            self.line_idx += 1;
-                        }
-                    }
-                    //   Up
-                    (KeyCode::Char('k'), KeyModifiers::NONE) => {
-                        self.line_idx = self.line_idx.saturating_sub(1);
-                    }
-                    //   Mid-page up
-                    (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
-                        self.move_page_half_up();
-                    }
-                    //   Mid-page down
-                    (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
-                        self.move_page_half_down();
-                    }
-                    //   Mid-page up
-                    (KeyCode::PageUp, KeyModifiers::NONE) => {
-                        self.move_page_up();
-                    }
-                    //   Mid-page down
-                    (KeyCode::PageDown, KeyModifiers::NONE) => {
-                        self.move_page_down();
-                    }
-                    //   go to start
-                    (KeyCode::Char('g'), KeyModifiers::NONE) => {
-                        self.line_idx = 0;
-                    }
-                    //   SHIFT + G -- go to end
-                    (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
-                        self.line_idx = filesize / self.alignment;
-                    }
-                    // Toggle help dialog
-                    (KeyCode::Char('h'), KeyModifiers::NONE) => self.show_help = !self.show_help,
-                    // Toggle file details dialog
-                    (KeyCode::Char('i'), KeyModifiers::NONE) => {
-                        self.show_fileinfo = !self.show_fileinfo
-                    }
-                    _ => {}
-                }
-            }
-            Event::Mouse(mouse) => match mouse.kind {
-                MouseEventKind::ScrollDown => {
-                    if self.line_idx < filesize / self.alignment {
-                        self.line_idx += 1;
-                    }
-                }
-                MouseEventKind::ScrollUp => {
-                    self.line_idx = self.line_idx.saturating_sub(1);
-                }
-                _ => {}
-            },
-            Event::Resize(width, height) => self.update_frame_size(width, height),
-            _ => {}
-        }
-
-        Ok(())
     }
 }
 
