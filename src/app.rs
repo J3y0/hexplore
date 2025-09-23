@@ -1,13 +1,13 @@
+use crate::{
+    file::FileInfo,
+    popup::{Popup, centered_rect},
+};
+use ratatui::widgets::{Scrollbar, ScrollbarOrientation, ScrollbarState};
 use ratatui::{
     Frame,
     layout::{Constraint, Flex, Layout},
     text::Text,
     widgets::{Block, Borders, Paragraph},
-};
-
-use crate::{
-    file::FileInfo,
-    popup::{Popup, centered_rect},
 };
 
 const ADDR_PANE_WIDTH_PERCENTAGE: u16 = 15;
@@ -29,7 +29,7 @@ i:        Get file details
 "#;
 
 pub struct App {
-    pub line_idx: usize,
+    pub scroll_pos: usize,
     pub vertical_margin: usize,
     pub frame_size: (u16, u16),
     pub show_help: bool,
@@ -56,21 +56,22 @@ impl App {
     pub fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
         // layout
-        let screen = Layout::vertical([Constraint::Fill(0), Constraint::Length(1)]).split(area);
-
+        let screen =
+            Layout::vertical([Constraint::Fill(0), Constraint::Length(1) /* Footer */]).split(area);
         let body = Layout::horizontal([
             Constraint::Percentage(ADDR_PANE_WIDTH_PERCENTAGE),
             Constraint::Percentage(HEX_PANE_WIDTH_PERCENTAGE),
             Constraint::Percentage(ASCII_PANE_WIDTH_PERCENTAGE),
+            Constraint::Length(1), // Scrollbar
         ])
         .split(screen[0]);
 
         let filesize = self.fileinfo.size;
-        let start_line_idx = self.line_idx;
-        // sub 2 because compared to frame size, only height-2 lines are rendered
-        let mut end_line_idx = self.line_idx + area.height as usize - self.vertical_margin;
+        let start_line_idx = self.scroll_pos;
+        // sub margin because compared to frame size, only height-margin lines are rendered
+        let mut end_line_idx = self.scroll_pos + area.height as usize - self.vertical_margin;
         if end_line_idx * self.alignment > filesize {
-            end_line_idx = filesize / self.alignment + 1;
+            end_line_idx = filesize.div_ceil(self.alignment);
         }
 
         // --- Address view
@@ -101,6 +102,15 @@ impl App {
         let asciidump = self.get_asciidump(start_line_idx, end_line_idx);
         let ascii_view = Paragraph::new(asciidump).block(ascii_block);
         frame.render_widget(ascii_view, body[2]);
+
+        // --- Scrollbar
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight).track_symbol(None);
+        let content_len = filesize.div_ceil(self.alignment);
+        let mut scrollbar_state = ScrollbarState::default()
+            .content_length(content_len)
+            .viewport_content_length(4)
+            .position(self.scroll_pos);
+        frame.render_stateful_widget(scrollbar, body[3], &mut scrollbar_state);
 
         // --- Footer
         let file_details_text = format!("Press (i) for '{}' details", self.fileinfo.name);
@@ -138,7 +148,7 @@ impl App {
 impl Default for App {
     fn default() -> Self {
         App {
-            line_idx: 0,
+            scroll_pos: 0,
             vertical_margin: 3,
             frame_size: (0, 0),
             show_help: false,

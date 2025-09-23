@@ -12,13 +12,13 @@ impl App {
                     // Navigation (vim style)
                     //   Down
                     (KeyCode::Char('j'), KeyModifiers::NONE) => {
-                        if self.line_idx < filesize / self.alignment {
-                            self.line_idx += 1;
+                        if (self.scroll_pos + 1) * self.alignment < filesize {
+                            self.scroll_pos += 1;
                         }
                     }
                     //   Up
                     (KeyCode::Char('k'), KeyModifiers::NONE) => {
-                        self.line_idx = self.line_idx.saturating_sub(1);
+                        self.scroll_pos = self.scroll_pos.saturating_sub(1);
                     }
                     //   Mid-page up
                     (KeyCode::Char('u'), KeyModifiers::CONTROL) => {
@@ -38,11 +38,11 @@ impl App {
                     }
                     //   go to start
                     (KeyCode::Char('g'), KeyModifiers::NONE) => {
-                        self.line_idx = 0;
+                        self.scroll_pos = 0;
                     }
                     //   SHIFT + G -- go to end
                     (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
-                        self.line_idx = filesize / self.alignment;
+                        self.scroll_pos = (filesize - 1) / self.alignment;
                     }
                     // Toggle help dialog
                     (KeyCode::Char('h'), KeyModifiers::NONE) => self.show_help = !self.show_help,
@@ -55,12 +55,12 @@ impl App {
             }
             Event::Mouse(mouse) => match mouse.kind {
                 MouseEventKind::ScrollDown => {
-                    if self.line_idx < filesize / self.alignment {
-                        self.line_idx += 1;
+                    if (self.scroll_pos + 1) * self.alignment < filesize {
+                        self.scroll_pos += 1;
                     }
                 }
                 MouseEventKind::ScrollUp => {
-                    self.line_idx = self.line_idx.saturating_sub(1);
+                    self.scroll_pos = self.scroll_pos.saturating_sub(1);
                 }
                 _ => {}
             },

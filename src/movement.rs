@@ -6,27 +6,27 @@ impl App {
     }
 
     pub fn move_page_half_up(&mut self) {
-        let height = self.frame_size.1 as usize;
-        self.line_idx = self.line_idx.saturating_sub(height / 2);
+        let height = self.frame_size.1 as usize - self.vertical_margin;
+        self.scroll_pos = self.scroll_pos.saturating_sub(height / 2);
     }
 
     pub fn move_page_half_down(&mut self) {
         let height = self.frame_size.1 as usize;
         let shift = (height - self.vertical_margin) / 2;
-        if self.line_idx + shift <= self.fileinfo.size / self.alignment {
-            self.line_idx += shift;
+        if (self.scroll_pos + shift) * self.alignment < self.fileinfo.size {
+            self.scroll_pos += shift;
         }
     }
 
     pub fn move_page_up(&mut self) {
-        let height = self.frame_size.1 as usize;
-        self.line_idx = self.line_idx.saturating_sub(height);
+        let height = self.frame_size.1 as usize - self.vertical_margin;
+        self.scroll_pos = self.scroll_pos.saturating_sub(height);
     }
 
     pub fn move_page_down(&mut self) {
         let height = self.frame_size.1 as usize - self.vertical_margin;
-        if self.line_idx + height <= self.fileinfo.size / self.alignment {
-            self.line_idx += height;
+        if (self.scroll_pos + height) * self.alignment < self.fileinfo.size {
+            self.scroll_pos += height;
         }
     }
 }
