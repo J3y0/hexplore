@@ -18,7 +18,7 @@ const HELP_BODY: &str = r#"
 h:        Toggle this help dialog
 q:        Quit the application
 j:        Move one line down
-h:        Move one line up
+k:        Move one line up
 PageUp:   Move one page up
 PageDown: Move one page down
 ctrl+u:   Move half page up
