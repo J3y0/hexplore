@@ -16,6 +16,7 @@ use ratatui::crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
 use std::io::{self, Write};
+use std::time::Duration;
 
 fn main() -> anyhow::Result<()> {
     let args = cli::Args::parse();
@@ -42,14 +43,17 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> anyhow::Result<()> {
+    terminal.draw(|f| app.draw(f))?;
     loop {
         if app.quit {
             break;
         }
-        terminal.draw(|f| app.draw(f))?;
 
-        let event = event::read()?;
-        app.handle_event(event)?;
+        if event::poll(Duration::from_millis(2000))? {
+            let event = event::read()?;
+            app.handle_event(event)?;
+        }
+        terminal.draw(|f| app.draw(f))?;
     }
 
     Ok(())
