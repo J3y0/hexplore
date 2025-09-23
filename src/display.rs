@@ -30,8 +30,7 @@ impl App {
             .take(end_line_idx - start_line_idx);
 
         for chunk in chunks_iter {
-            let pad = (self.alignment - chunk.len()) % self.alignment;
-            text.push(Line::from(line_format_hex(chunk, pad)));
+            text.push(Line::from(line_format_hex(chunk)));
         }
         text
     }
@@ -46,27 +45,25 @@ impl App {
             .take(end_line_idx - start_line_idx);
 
         for chunk in chunks_iter {
-            let pad = (self.alignment - chunk.len()) % self.alignment;
-            text.push(Line::from(line_format_ascii(chunk, pad)));
+            text.push(Line::from(line_format_ascii(chunk)));
         }
         text
     }
 }
 
-fn line_format_hex(bytes: &[u8], padding: usize) -> String {
+fn line_format_hex(bytes: &[u8]) -> String {
     let mut s = String::with_capacity(3 * bytes.len());
 
     for b in bytes.iter() {
         s.push_str(format!("{b:02X} ").as_str());
     }
-    s.push_str("   ".repeat(padding).as_str());
     // Pop last space
     s.pop();
 
     s
 }
 
-fn line_format_ascii(bytes: &[u8], padding: usize) -> String {
+fn line_format_ascii(bytes: &[u8]) -> String {
     let mut s = String::with_capacity(bytes.len());
 
     for b in bytes.iter() {
@@ -76,7 +73,6 @@ fn line_format_ascii(bytes: &[u8], padding: usize) -> String {
             s.push('.');
         }
     }
-    s.push_str(" ".repeat(padding).as_str());
 
     s
 }
