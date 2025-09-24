@@ -26,8 +26,13 @@ fn main() -> anyhow::Result<()> {
     enable_raw_mode()?;
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
-    let mut app = App::new(args.file, args.blocksize)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout))?;
+    let term_size = terminal.size()?;
+    let mut app = App::new(
+        args.file,
+        args.blocksize,
+        (term_size.width, term_size.height),
+    )?;
 
     run_app(&mut terminal, &mut app).unwrap_or_else(|err| {
         let _ = writeln!(io::stderr(), "error occurred: {err:?}");

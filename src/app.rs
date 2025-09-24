@@ -45,9 +45,14 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(filename: String, blocksize: Option<u16>) -> anyhow::Result<App> {
+    pub fn new(
+        filename: String,
+        blocksize: Option<u16>,
+        frame_size: (u16, u16),
+    ) -> anyhow::Result<App> {
         let mut app = App {
             fileinfo: FileInfo::new(&filename)?,
+            frame_size,
             ..App::default()
         };
 
