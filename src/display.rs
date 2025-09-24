@@ -89,6 +89,27 @@ pub fn count_hexdigits(val: usize) -> usize {
     i
 }
 
+/// Explanation of the calculation
+///
+/// |-Addr-----------|-Hex-------------------------------|-Ascii---------------|
+/// |                |                                   |                     |
+/// |                |                                   |                     |
+/// | PAD + ADDR_LEN |  3*nb_bytes+nb_bytes/blocksize-1  |       nb_bytes      |
+/// | <------------> | <-------------------------------> | <-----------------> |
+/// |                |                                   |                     |
+/// |                |                                   |                     |
+/// |                |                                   |                     |
+/// |----------------|-----------------------------------|---------------------|
+///
+///
+/// width = (ADDR_WIDTH) + (3*nb_bytes + nb_bytes/blocksize - 1) + nb_bytes + 3
+///
+/// ADDR_WIDTH = PAD + ADDR_LEN
+/// 3 is the number of bytes allocated to ratatui interface
+///
+/// Reverse the formula in order to get `nb_bytes`:
+///
+///  nb_bytes = floor((blocksize)/(4*blocksize+1) * (width - 3 + 1 - PAD - ADDR_LEN))
 pub fn get_bytes_per_row(width: u16, addr_width: u16, blocksize: u16) -> usize {
     (blocksize * ((width - addr_width - 3 /* ratatui needed bytes */ + 1) / (4 * blocksize + 1)))
         as usize
