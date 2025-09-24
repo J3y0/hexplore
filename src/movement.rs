@@ -13,7 +13,7 @@ impl App {
     pub fn move_page_half_down(&mut self) {
         let height = self.frame_size.1 as usize;
         let shift = (height - self.vertical_margin) / 2;
-        if (self.scroll_pos + shift) * self.alignment < self.fileinfo.size {
+        if (self.scroll_pos + shift) * self.bytes_per_row < self.fileinfo.size {
             self.scroll_pos += shift;
         }
     }
@@ -25,7 +25,7 @@ impl App {
 
     pub fn move_page_down(&mut self) {
         let height = self.frame_size.1 as usize - self.vertical_margin;
-        if (self.scroll_pos + height) * self.alignment < self.fileinfo.size {
+        if (self.scroll_pos + height) * self.bytes_per_row < self.fileinfo.size {
             self.scroll_pos += height;
         }
     }

@@ -12,7 +12,7 @@ impl App {
         let mut text = vec![];
 
         for idx in start_line_idx..end_line_idx {
-            let addr = idx * self.alignment;
+            let addr = idx * self.bytes_per_row;
             let hex = format!("{addr:x}");
             text.push(Line::from("0".repeat(cap - hex.len()) + &hex));
         }
@@ -25,12 +25,12 @@ impl App {
         let chunks_iter = self
             .fileinfo
             .content
-            .chunks(self.alignment)
+            .chunks(self.bytes_per_row)
             .skip(start_line_idx)
             .take(end_line_idx - start_line_idx);
 
         for chunk in chunks_iter {
-            text.push(Line::from(line_format_hex(chunk)));
+            text.push(Line::from(line_format_hex(chunk, self.blocksize)));
         }
         text
     }
@@ -40,7 +40,7 @@ impl App {
         let chunks_iter = self
             .fileinfo
             .content
-            .chunks(self.alignment)
+            .chunks(self.bytes_per_row)
             .skip(start_line_idx)
             .take(end_line_idx - start_line_idx);
 
@@ -51,11 +51,11 @@ impl App {
     }
 }
 
-fn line_format_hex(bytes: &[u8]) -> String {
+fn line_format_hex(bytes: &[u8], blocksize: u16) -> String {
     let mut s = String::with_capacity(3 * bytes.len());
 
     for (i, b) in bytes.iter().enumerate() {
-        if i != 0 && i % 4 == 0 {
+        if i != 0 && i % blocksize as usize == 0 {
             s.push(' ');
         }
         s.push_str(format!("{b:02X} ").as_str());
@@ -80,11 +80,16 @@ fn line_format_ascii(bytes: &[u8]) -> String {
     s
 }
 
-fn count_hexdigits(val: usize) -> usize {
+pub fn count_hexdigits(val: usize) -> usize {
     let mut i = 0;
     while val >> (4 * i) != 0 {
         i += 1;
     }
 
     i
+}
+
+pub fn get_bytes_per_row(width: u16, addr_width: u16, blocksize: u16) -> usize {
+    (blocksize * ((width - addr_width - 3 /* ratatui needed bytes */ + 1) / (4 * blocksize + 1)))
+        as usize
 }

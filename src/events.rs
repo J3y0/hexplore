@@ -12,7 +12,7 @@ impl App {
                     // Navigation (vim style)
                     //   Down
                     (KeyCode::Char('j'), KeyModifiers::NONE) => {
-                        if (self.scroll_pos + 1) * self.alignment < filesize {
+                        if (self.scroll_pos + 1) * self.bytes_per_row < filesize {
                             self.scroll_pos += 1;
                         }
                     }
@@ -42,7 +42,7 @@ impl App {
                     }
                     //   SHIFT + G -- go to end
                     (KeyCode::Char('G'), KeyModifiers::SHIFT) => {
-                        self.scroll_pos = (filesize - 1) / self.alignment;
+                        self.scroll_pos = (filesize - 1) / self.bytes_per_row;
                     }
                     // Toggle help dialog
                     (KeyCode::Char('h'), KeyModifiers::NONE) => self.show_help = !self.show_help,
@@ -55,7 +55,7 @@ impl App {
             }
             Event::Mouse(mouse) => match mouse.kind {
                 MouseEventKind::ScrollDown => {
-                    if (self.scroll_pos + 1) * self.alignment < filesize {
+                    if (self.scroll_pos + 1) * self.bytes_per_row < filesize {
                         self.scroll_pos += 1;
                     }
                 }
