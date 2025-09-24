@@ -20,3 +20,5 @@ An hexadecimal editor tailored for reverse-engineering tasks written in Rust.
 - [ ] Add disassembly mode (based on Capstone)
 - [ ] Patch assembly
 - [ ] Keybind configuration
+- [ ] Goto command
+- [ ] Search across all bytes (in hex / ascii view)
