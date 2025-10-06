@@ -15,7 +15,7 @@ An hexadecimal editor tailored for reverse-engineering tasks written in Rust.
 - [ ] Add confirm exit dialog
 - [ ] Add style to TUI application
 - [ ] Add command prompt (triggered by `SPACE`)
-- [ ] Add logs
+- [x] Add logs
 - [ ] Add edit features (terminal raw-mode)
 - [ ] Add disassembly mode (based on Capstone)
 - [ ] Patch assembly

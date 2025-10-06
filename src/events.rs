@@ -1,4 +1,5 @@
 use crate::app::App;
+use log::debug;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind};
 
 impl App {
@@ -64,7 +65,10 @@ impl App {
                 }
                 _ => {}
             },
-            Event::Resize(width, height) => self.update_frame_size(width, height),
+            Event::Resize(width, height) => {
+                debug!("resize terminal to {width}x{height}");
+                self.update_frame_size(width, height);
+            }
             _ => {}
         }
     }

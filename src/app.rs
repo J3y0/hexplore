@@ -1,3 +1,4 @@
+use log::debug;
 use std::io;
 use std::time::Duration;
 
@@ -58,8 +59,10 @@ impl App {
         blocksize: Option<u16>,
         frame_size: (u16, u16),
     ) -> io::Result<Self> {
+        let fileinfo = FileInfo::new(&filename)?;
+        debug!("'{filename}' information retrieved");
         let mut app = App {
-            fileinfo: FileInfo::new(&filename)?,
+            fileinfo,
             frame_size,
             ..App::default()
         };
@@ -67,12 +70,16 @@ impl App {
         // if specified in CLI, change default value
         if let Some(blocksize) = blocksize {
             app.blocksize = blocksize;
+            debug!("blocksize detected from CLI args: {blocksize}");
+        } else {
+            debug!("no blocksize from CLI, using default: {}", app.blocksize);
         }
 
         Ok(app)
     }
 
     pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<()> {
+        debug!("start app");
         terminal.draw(|f| self.draw(f))?;
         loop {
             if self.quit {

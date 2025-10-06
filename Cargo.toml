@@ -13,5 +13,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.47", features = ["derive"] }
 derive_setters = "0.1.8"
+log = "0.4.28"
 ratatui = "0.29.0"
 sha2 = "0.10.9"
+simplelog = "0.12.2"
