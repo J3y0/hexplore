@@ -1,14 +1,22 @@
+use std::io;
+use std::time::Duration;
+
 use crate::{
     display,
     file::FileInfo,
     popup::{Popup, centered_rect_length, centered_rect_percent},
 };
-use ratatui::widgets::{Scrollbar, ScrollbarOrientation, ScrollbarState};
 use ratatui::{
     Frame,
     layout::{Constraint, Flex, Layout},
     text::Text,
     widgets::{Block, Borders, Paragraph},
+};
+use ratatui::{
+    Terminal,
+    backend::Backend,
+    crossterm::event,
+    widgets::{Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
 const ADDR_PANE_PADDING: u16 = 4;
@@ -49,7 +57,7 @@ impl App {
         filename: String,
         blocksize: Option<u16>,
         frame_size: (u16, u16),
-    ) -> anyhow::Result<App> {
+    ) -> io::Result<Self> {
         let mut app = App {
             fileinfo: FileInfo::new(&filename)?,
             frame_size,
@@ -62,6 +70,23 @@ impl App {
         }
 
         Ok(app)
+    }
+
+    pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<()> {
+        terminal.draw(|f| self.draw(f))?;
+        loop {
+            if self.quit {
+                break;
+            }
+
+            if event::poll(Duration::from_millis(2000))? {
+                let event = event::read()?;
+                self.handle_event(event);
+            }
+            terminal.draw(|f| self.draw(f))?;
+        }
+
+        Ok(())
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {

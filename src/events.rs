@@ -2,7 +2,7 @@ use crate::app::App;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind};
 
 impl App {
-    pub fn handle_event(&mut self, event: Event) -> anyhow::Result<()> {
+    pub fn handle_event(&mut self, event: Event) {
         let filesize = self.fileinfo.size;
         match event {
             Event::Key(key) if key.kind == KeyEventKind::Press => {
@@ -67,7 +67,5 @@ impl App {
             Event::Resize(width, height) => self.update_frame_size(width, height),
             _ => {}
         }
-
-        Ok(())
     }
 }

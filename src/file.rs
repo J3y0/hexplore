@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::{fs, io, path::Path};
 
 use ratatui::text::{Line, Text};
 use sha2::{self, Digest};
@@ -14,12 +14,27 @@ pub struct FileInfo {
 }
 
 impl FileInfo {
-    pub fn new(filename: &str) -> anyhow::Result<Self> {
-        let strict_filename = Path::new(filename).file_name().unwrap().to_os_string();
-        let content = fs::read(filename)?;
+    pub fn new(filepath: &str) -> io::Result<Self> {
+        let path = Path::new(filepath);
+        if !path.exists() {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("file '{filepath}' does not exist"),
+            ));
+        }
+
+        if !path.is_file() {
+            return Err(io::Error::new(
+                io::ErrorKind::IsADirectory,
+                "input is a directory",
+            ));
+        }
+
+        let strict_filename = path.file_name().unwrap().to_os_string();
+        let content = fs::read(filepath)?;
         let sha256 = calc_sha256(&content);
         #[cfg(target_os = "linux")]
-        let filetype = get_filetype(filename)?;
+        let filetype = get_filetype(filepath)?;
 
         Ok(FileInfo {
             name: strict_filename.into_string().unwrap_or_default(),
@@ -55,7 +70,7 @@ fn calc_sha256(content: &[u8]) -> String {
 }
 
 #[cfg(target_os = "linux")]
-fn get_filetype(filename: &str) -> anyhow::Result<String> {
+fn get_filetype(filename: &str) -> io::Result<String> {
     use std::process::Command;
 
     // Run 'file' command

@@ -9,24 +9,26 @@ mod popup;
 use app::App;
 use clap::Parser;
 use ratatui::Terminal;
-use ratatui::backend::{Backend, CrosstermBackend};
-use ratatui::crossterm::event::{self, DisableMouseCapture, EnableMouseCapture};
+use ratatui::backend::CrosstermBackend;
+use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
 use std::io::{self, Write};
-use std::time::Duration;
+use std::process;
 
-fn main() -> anyhow::Result<()> {
+fn main() {
+    if let Err(err) = actual_main() {
+        let _ = writeln!(io::stderr(), "error: {err}");
+        process::exit(1);
+    }
+}
+
+fn actual_main() -> io::Result<()> {
     let args = cli::Args::parse();
 
-    // ratatui init
-    let mut stdout = io::stdout();
-    enable_raw_mode()?;
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout))?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
     let term_size = terminal.size()?;
     let mut app = App::new(
         args.file,
@@ -34,32 +36,21 @@ fn main() -> anyhow::Result<()> {
         (term_size.width, term_size.height),
     )?;
 
-    run_app(&mut terminal, &mut app).unwrap_or_else(|err| {
-        let _ = writeln!(io::stderr(), "error occurred: {err:?}");
-    });
+    init_terminal_state()?;
+    let res = app.run(&mut terminal);
+    cleanup_terminal_state()?;
 
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
+    res
+}
+
+fn init_terminal_state() -> io::Result<()> {
+    enable_raw_mode()?;
+    execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> anyhow::Result<()> {
-    terminal.draw(|f| app.draw(f))?;
-    loop {
-        if app.quit {
-            break;
-        }
-
-        if event::poll(Duration::from_millis(2000))? {
-            let event = event::read()?;
-            app.handle_event(event)?;
-        }
-        terminal.draw(|f| app.draw(f))?;
-    }
-
+fn cleanup_terminal_state() -> io::Result<()> {
+    disable_raw_mode()?;
+    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
     Ok(())
 }
